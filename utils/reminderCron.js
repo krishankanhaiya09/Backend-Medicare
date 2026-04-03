@@ -1,74 +1,84 @@
 import cron from "node-cron";
-import admin from "./firebase.js";
 import Medicine from "../models/Medicine.js";
-import { sendSMS } from "./sendSms.js";
+import User from "../models/User.js";
+import sendWhatsApp from "./sendWhatsApp.js";
+
+const getTodayDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getTargetTime = () => {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() + 10);
+
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+
+  return `${hours}:${minutes}`;
+};
+
+const normalizeDate = (dateValue) => {
+  const date = new Date(dateValue);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 const startReminderCron = () => {
-  console.log("⏰ Reminder Cron Started...");
-
   cron.schedule("* * * * *", async () => {
     try {
-      const now = new Date();
-      const currentTime = now.toTimeString().slice(0, 5);
+      const today = getTodayDateString();
+      const targetTime = getTargetTime();
 
-      console.log("⏱ Checking time:", currentTime);
+      console.log("Checking reminder for date:", today, "time:", targetTime);
 
-      const medicines = await Medicine.find().populate("user");
+      const medicines = await Medicine.find({ isActive: true }).populate("user");
 
-      for (let med of medicines) {
-        if (!med.times || !Array.isArray(med.times)) continue;
+      for (const medicine of medicines) {
+        const medicineStartDate = normalizeDate(medicine.startDate);
+        const medicineEndDate = medicine.endDate
+          ? normalizeDate(medicine.endDate)
+          : null;
 
-        console.log(`💊 Medicine: ${med.medicineName}, Times:`, med.times);
+        const isWithinDateRange =
+          medicineStartDate <= today && (!medicineEndDate || medicineEndDate >= today);
 
-        for (let time of med.times) {
-          const cleanTime = String(time).trim();
+        if (!isWithinDateRange) continue;
 
-          console.log(`➡ Comparing DB time ${cleanTime} with current time ${currentTime}`);
+        if (!medicine.times || !medicine.times.includes(targetTime)) continue;
 
-          if (cleanTime === currentTime) {
-            const user = med.user;
+        let phone = medicine.user?.phone;
 
-            console.log("🔔 Reminder Triggered!");
-            console.log(`User: ${user?.name}`);
-            console.log(`Medicine: ${med.medicineName}`);
-            console.log(`Matched Time: ${cleanTime}`);
-            console.log(`Device Token: ${user?.deviceToken ? "YES" : "NO"}`);
-            console.log(`Phone: ${user?.phone ? user.phone : "NO PHONE"}`);
-
-            let pushSent = false;
-
-            if (user?.deviceToken) {
-              try {
-                await admin.messaging().send({
-                  token: user.deviceToken,
-                  notification: {
-                    title: "Medicine Reminder 💊",
-                    body: `Time to take ${med.medicineName}`,
-                  },
-                });
-
-                console.log("✅ Push sent successfully");
-                pushSent = true;
-              } catch (err) {
-                console.log("❌ Push failed:", err.message);
-              }
-            }
-
-            if (!pushSent && user?.phone) {
-              await sendSMS(
-                user.phone,
-                `Time to take your medicine: ${med.medicineName}`
-              );
-            }
-
-            if (!pushSent && !user?.phone) {
-              console.log("⚠ No deviceToken and no phone number. Nothing to send.");
-            }
-          }
+        if (!phone && medicine.user?._id) {
+          const user = await User.findById(medicine.user._id);
+          phone = user?.phone;
         }
+
+        if (!phone) {
+          console.log(`Phone missing for medicine ${medicine.medicineName}`);
+          continue;
+        }
+
+        const message =
+          `Reminder: Aapki medicine "${medicine.medicineName}" ` +
+          `${targetTime} par leni hai.\n` +
+          `Dose: ${medicine.dosage}\n` +
+          `Please 10 minute baad medicine le lena.`;
+
+        await sendWhatsApp({
+          to: phone,
+          message,
+        });
+
+        console.log(`WhatsApp reminder sent to ${phone} for ${medicine.medicineName}`);
       }
     } catch (error) {
-      console.log("❌ Cron Error:", error.message);
+      console.log("Reminder cron error:", error.message);
     }
   });
 };

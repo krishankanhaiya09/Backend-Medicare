@@ -1,28 +1,21 @@
+import "dotenv/config";
 import twilio from "twilio";
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
-
 const sendWhatsApp = async ({ to, message }) => {
-  try {
-    const formattedTo = to.startsWith("whatsapp:")
-      ? to
-      : `whatsapp:${to}`;
+  const client = twilio(
+    process.env.TWILIO_ACCOUNT_SID,
+    process.env.TWILIO_AUTH_TOKEN
+  );
 
-    const res = await client.messages.create({
-      from: process.env.TWILIO_WHATSAPP_NUMBER,
-      to: formattedTo,
-      body: message,
-    });
+  const formattedTo = to.startsWith("whatsapp:") ? to : `whatsapp:${to}`;
 
-    console.log("WhatsApp sent:", res.sid);
-    return res;
-  } catch (error) {
-    console.log("WhatsApp send error:", error.message);
-    throw error;
-  }
+  const result = await client.messages.create({
+    from: process.env.TWILIO_WHATSAPP_NUMBER,
+    to: formattedTo,
+    body: message,
+  });
+
+  return result;
 };
 
 export default sendWhatsApp;
