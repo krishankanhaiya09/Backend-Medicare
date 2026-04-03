@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import Medicine from "../models/Medicine.js";
 import User from "../models/User.js";
-import sendWhatsApp from "./utils/sendWhatsApp.js";
+import sendWhatsApp from "../utils/sendWhatsApp.js";
 
 const toMinutes = (timeStr) => {
   // supports "16:50" format
