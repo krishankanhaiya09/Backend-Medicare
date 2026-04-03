@@ -50,7 +50,8 @@ const startReminderCron = () => {
           : null;
 
         const isWithinDateRange =
-          medicineStartDate <= today && (!medicineEndDate || medicineEndDate >= today);
+          medicineStartDate <= today &&
+          (!medicineEndDate || medicineEndDate >= today);
 
         if (!isWithinDateRange) continue;
         if (!medicine.times || !Array.isArray(medicine.times)) continue;
