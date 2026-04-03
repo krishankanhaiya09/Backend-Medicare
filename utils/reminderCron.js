@@ -22,14 +22,7 @@ const normalizeTime = (timeStr) => {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 };
 
-const formatTime12Hour = (timeStr) => {
-  const [h, m] = timeStr.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hour12 = h % 12 || 12;
-  return `${hour12}:${String(m).padStart(2, "0")} ${ampm}`;
-};
-
-const getReminderTargetTime = () => {
+const getTargetTime = () => {
   const now = getIndiaNow();
   now.setMinutes(now.getMinutes() + 10);
 
@@ -44,7 +37,7 @@ const startReminderCron = () => {
     try {
       const now = getIndiaNow();
       const today = formatDate(now);
-      const targetTime = getReminderTargetTime();
+      const targetTime = getTargetTime();
 
       console.log("Checking reminder for date:", today, "time:", targetTime);
 
@@ -57,11 +50,9 @@ const startReminderCron = () => {
           : null;
 
         const isWithinDateRange =
-          medicineStartDate <= today &&
-          (!medicineEndDate || medicineEndDate >= today);
+          medicineStartDate <= today && (!medicineEndDate || medicineEndDate >= today);
 
         if (!isWithinDateRange) continue;
-
         if (!medicine.times || !Array.isArray(medicine.times)) continue;
 
         const normalizedTimes = medicine.times.map((time) => normalizeTime(time));
@@ -85,11 +76,10 @@ const startReminderCron = () => {
         }
 
         const message =
-          `Gentle reminder 💊\n` +
-          `Hi ${medicine.user?.name || "Patient"},\n` +
-          `Your medicine "${medicine.medicineName}" is scheduled at ${formatTime12Hour(targetTime)}.\n` +
+          `Reminder: Aapki medicine "${medicine.medicineName}" ` +
+          `${targetTime} par leni hai.\n` +
           `Dose: ${medicine.dosage}\n` +
-          `Please take it on time after 10 minutes.`;
+          `Please 10 minute baad medicine le lena.`;
 
         await sendWhatsApp({
           to: phone,
