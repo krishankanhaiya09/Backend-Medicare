@@ -3,12 +3,12 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import startReminderCron from "./utils/reminderCron.js";
 import "./cron/Reminder.js"; 
-
+import chatRoutes from "./routes/chatRoutes.js";
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 import testRoutes from "./routes/testRoutes.js";
-
+app.use("/api/chat", chatRoutes);
 app.use("/api", testRoutes);
 connectDB();
 
