@@ -2,7 +2,7 @@ import app from "./app.js";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import startReminderCron from "./utils/reminderCron.js";
-import "./cron/reminder.js"; 
+import "./cron/Reminder.js"; 
 
 dotenv.config();
 
