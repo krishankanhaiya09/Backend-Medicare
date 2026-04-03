@@ -68,7 +68,7 @@ const startReminderCron = () => {
           `Reminder: Aapki medicine "${medicine.medicineName}" ` +
           `${targetTime} par leni hai.\n` +
           `Dose: ${medicine.dosage}\n` +
-          `Please 10 minute baad medicine le lena.`;
+          `Please 10 minute baad medicine le lena🫦🫦🫦🫦`;
 
         await sendWhatsApp({
           to: phone,
