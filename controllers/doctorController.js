@@ -1,6 +1,6 @@
 import User from "../models/User.js";
 import Medicine from "../models/Medicine.js";
-import DoseLog from "../models/DoseLog.js";
+import DoseLog from "../models/Doselog.js";
 import { calculateAdherence } from "../utils/adherence.js";
 
 export const getAllPatients = async (req, res) => {

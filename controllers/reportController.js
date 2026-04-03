@@ -1,4 +1,4 @@
-import DoseLog from "../models/DoseLog.js";
+import DoseLog from "../models/Doselog.js";
 import { calculateAdherence } from "../utils/adherence.js";
 
 export const getAdherenceReport = async (req, res) => {

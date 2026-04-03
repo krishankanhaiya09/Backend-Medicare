@@ -1,5 +1,5 @@
 import Medicine from "../models/Medicine.js";
-import DoseLog from "../models/DoseLog.js";
+import DoseLog from "../models/Doselog.js";
 
 export const addMedicine = async (req, res) => {
   try {
