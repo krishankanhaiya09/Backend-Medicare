@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import admin from "../utils/firebase.js";
 import Medicine from "../models/Medicine.js";
-import { sendSMS } from "../utils/sendSMS.js";
+import { sendSMS } from "../utils/sendSms.js";
 
 cron.schedule("* * * * *", async () => {
   const now = new Date();
