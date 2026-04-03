@@ -1,47 +1,53 @@
 import cron from "node-cron";
-import admin from "../utils/firebase.js";
 import Medicine from "../models/Medicine.js";
-import { sendSMS } from "../utils/sendSms.js";
+import User from "../models/User.js";
+import sendWhatsApp from "./utils/sendWhatsApp.js";
+
+const toMinutes = (timeStr) => {
+  // supports "16:50" format
+  const [hour, minute] = timeStr.split(":").map(Number);
+  return hour * 60 + minute;
+};
+
+const formatTime12Hour = (timeStr) => {
+  const [h, m] = timeStr.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${String(m).padStart(2, "0")} ${ampm}`;
+};
 
 cron.schedule("* * * * *", async () => {
-  const now = new Date();
-  const currentTime = now.toTimeString().slice(0, 5);
+  try {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-  const medicines = await Medicine.find().populate("user");
+    console.log("Checking reminder time:", now.toLocaleTimeString());
 
-  for (let med of medicines) {
-    if (!med.times) continue;
+    const medicines = await Medicine.find().populate("user");
 
-    for (let time of med.times) {
-      if (time === currentTime) {
-        const user = med.user;
+    for (const med of medicines) {
+      if (!med.times || !Array.isArray(med.times)) continue;
 
-        let pushSent = false;
+      for (const time of med.times) {
+        const medicineMinutes = toMinutes(time);
+        const reminderMinutes = medicineMinutes - 10;
 
-        // 🔔 PUSH
-        if (user.deviceToken) {
-          try {
-            await admin.messaging().send({
-              token: user.deviceToken,
-              notification: {
-                title: "Medicine Reminder 💊",
-                body: `Time to take ${med.medicineName}`,
-              },
-            });
-            pushSent = true;
-          } catch (err) {
-            console.log("Push failed");
-          }
-        }
+        if (currentMinutes === reminderMinutes) {
+          const user = med.user || (await User.findById(med.user));
+          if (!user?.phone) continue;
 
-        // 📩 SMS fallback
-        if (!pushSent && user.phone) {
-          await sendSMS(
-            user.phone,
-            `Time to take ${med.medicineName}`
-          );
+          const msg = `Gentle reminder 💊\nHi ${user.name || "Patient"}, your medicine "${med.medicineName}" is scheduled at ${formatTime12Hour(time)}.\nPlease take it on time.`;
+
+          await sendWhatsApp({
+            to: user.phone,
+            message: msg,
+          });
+
+          console.log(`WhatsApp reminder sent to ${user.phone} for ${med.medicineName}`);
         }
       }
     }
+  } catch (error) {
+    console.log("Reminder cron error:", error.message);
   }
 });
