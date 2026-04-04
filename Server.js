@@ -11,7 +11,9 @@ import testRoutes from "./routes/testRoutes.js";
 
 app.use("/api", testRoutes);
 connectDB();
-
+app.get("/health", (req, res) => {
+  res.send("OK");
+});
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   startReminderCron();
